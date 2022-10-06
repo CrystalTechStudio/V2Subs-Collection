@@ -30,6 +30,7 @@ jobs:
         
       - name: Update share list
         run: |
+          pip install requests
           python v2raySubs.py
         
       - name: Commit
