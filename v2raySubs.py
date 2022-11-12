@@ -59,10 +59,10 @@ def vmess_rewrite(share_link_vmess):
         ip = socket.getaddrinfo(link_json['add'], None)[0][4][0]
         # Replace value of 'ps'
         link_json['ps'] = get_ip_addr(ip) + ' → MNT@CrystalTec'
+        return link_json
     except socket.gaierror:
         # If can't get, use 'Unexpected IP' instead
-        link_json['ps'] = 'Unexpected IP → MNT@CrystalTec'
-    return link_json
+        return 'Unexpected IP → MNT@CrystalTec'
 
 
 def trojan_ss_rewrite(share_link_trojan_ss):
@@ -72,29 +72,44 @@ def trojan_ss_rewrite(share_link_trojan_ss):
         ip = socket.getaddrinfo(share_content[1], None)[0][4][0]
         # Replace value of description
         share_content[3] = get_ip_addr(ip) + ' → MNT@CrystalTec'
+        return '{0[0]}@{0[1]}:{0[2]}#{0[3]}'.format(share_content)
     except socket.gaierror:
         # If can't get, use 'Unexpected IP' instead
-        share_content[3] = 'Unexpected IP → MNT@CrystalTec'
-    return '{0[0]}@{0[1]}:{0[2]}#{0[3]}'.format(share_content)
+        return 'Unexpected IP → MNT@CrystalTec'
 
 
 # Encoded source subscribe links
 SubscribeUrl = [
     'aHR0cHM6Ly9idWxpbmsubWUvc3ViL3BkZnRjL3Yy',
     'aHR0cHM6Ly9vcGVuaXQuZGF5Y2F0LnNwYWNlL2xvbmc=',
-    'aHR0cHM6Ly9hcGkubmRzeGZramZ2aHpkc2Zpby5xdWVzdC9saW5rL3NFRHdTYjZHNDVOVjd5T0c/c3ViPTMmZXh0ZW5kPTE='
+    'aHR0cHM6Ly9hcGkubmRzeGZramZ2aHpkc2Zpby5xdWVzdC9saW5rL3NFRHdTYjZHNDVOVjd5T0c/c3ViPTMmZXh0ZW5kPTE=',
+    'aHR0cHM6Ly9naHByb3h5LmNvbS9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vYWlib2JveHgvdjJyYXlmcmVlL21haW4vdjI='
 ]
 FullShareLinks = ''
+TotalLinkCount = 0
 
 for url in SubscribeUrl:
-    response = requests.get(base64.b64decode(url).decode('utf-8')) # Decode url and get content
-    for link in base64.b64decode(response.content.decode('utf-8')).decode('utf-8').split(): # Split share links line by line
-        if link.split('://')[0] == 'vmess': # Vmess use Json as its link format
-            share_link = 'vmess://' + base64.b64encode(str(vmess_rewrite(link)).encode('utf-8')).decode('utf-8')
-            FullShareLinks = FullShareLinks + share_link + '\n'
-        elif link.split('://')[0] == 'trojan' or link.split('://')[0] == 'ss': # Trojan and Shadowsocks has similar link format
-            share_link = link.split('://')[0] + '://' + trojan_ss_rewrite(link).replace('\'', '\"')
-            FullShareLinks = FullShareLinks + share_link + '\n'
+    try:
+        LinkCount = 0
+        response = requests.get(base64.b64decode(url).decode('utf-8')) # Decode url and get content
+        for link in base64.b64decode(response.content.decode('utf-8')).decode('utf-8').split(): # Split share links line by line
+            if link.split('://')[0] == 'vmess': # Vmess use Json as its link format
+                rewrite_result = vmess_rewrite(link)
+                if rewrite_result != 'Unexpected IP → MNT@CrystalTec':
+                    share_link = 'vmess://' + base64.b64encode(str(rewrite_result).encode('utf-8')).decode('utf-8')
+                    FullShareLinks = FullShareLinks + share_link + '\n'
+                    LinkCount += 1
+            elif link.split('://')[0] == 'trojan' or link.split('://')[0] == 'ss': # Trojan and Shadowsocks has similar link format
+                rewrite_result = trojan_ss_rewrite(link)
+                if rewrite_result != 'Unexpected IP → MNT@CrystalTec':
+                    share_link = link.split('://')[0] + '://' + rewrite_result.replace('\'', '\"')
+                    FullShareLinks = FullShareLinks + share_link + '\n'
+                    LinkCount += 1
+        print('Subscribe Link ' + base64.b64decode(url).decode('utf-8') + '\n - Update Finished => Link Count: ' + str(LinkCount))
+        TotalLinkCount += LinkCount
+    except Exception as e:
+        print('Subscribe Link ' + base64.b64decode(url).decode('utf-8') + '\n - Update Failed => ' + str(e))
+print('Total Link Count: ' + str(TotalLinkCount))
 
 # Encode and write whole link to file
 with open('long', mode='w', encoding='utf-8') as result_file:
