@@ -92,10 +92,6 @@ for url in SubscribeUrl:
     try:
         LinkCount = 0
         response = requests.get(base64.b64decode(url).decode('utf-8')) # Decode url and get content
-        responseContent = response.content
-        missing_padding = len(responseContent) % 4
-            if missing_padding != 0:
-        responseContent += b'='* (4 - missing_padding)
         for link in base64.b64decode(response.content.decode('utf-8')).decode('utf-8').split(): # Split share links line by line
             if link.split('://')[0] == 'vmess': # Vmess use Json as its link format
                 rewrite_result = vmess_rewrite(link)
