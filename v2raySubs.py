@@ -83,7 +83,7 @@ SubscribeUrl = [
     'aHR0cHM6Ly9idWxpbmsubWUvc3ViL3BkZnRjL3Yy',
     'aHR0cHM6Ly9vcGVuaXQuZGF5Y2F0LnNwYWNlL2xvbmc=',
     'aHR0cHM6Ly9hcGkubmRzeGZramZ2aHpkc2Zpby5xdWVzdC9saW5rL3NFRHdTYjZHNDVOVjd5T0c/c3ViPTMmZXh0ZW5kPTE=',
-    'aHR0cHM6Ly9naHByb3h5LmNvbS9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vYWlib2JveHgvdjJyYXlmcmVlL21haW4vdjI='
+    'aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2FpYm9ib3h4L3YycmF5ZnJlZS9tYWluL3Yy'
 ]
 FullShareLinks = ''
 TotalLinkCount = 0
@@ -92,6 +92,10 @@ for url in SubscribeUrl:
     try:
         LinkCount = 0
         response = requests.get(base64.b64decode(url).decode('utf-8')) # Decode url and get content
+        responseContent = response.content
+        missing_padding = len(responseContent) % 4
+            if missing_padding != 0:
+        responseContent += b'='* (4 - missing_padding)
         for link in base64.b64decode(response.content.decode('utf-8')).decode('utf-8').split(): # Split share links line by line
             if link.split('://')[0] == 'vmess': # Vmess use Json as its link format
                 rewrite_result = vmess_rewrite(link)
